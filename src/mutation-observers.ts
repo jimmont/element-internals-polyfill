@@ -1,7 +1,7 @@
-import { internalsMap, shadowHostsMap, upgradeMap, hiddenInputMap, documentFragmentMap } from './maps.js';
-import { aom } from './aom.js';
-import { removeHiddenInputs, initForm, initLabels, upgradeInternals } from './utils.js';
-import { ICustomElement } from './types.js';
+import { internalsMap, shadowHostsMap, upgradeMap, hiddenInputMap, documentFragmentMap } from './maps.ts';
+import { aom } from './aom.ts';
+import { removeHiddenInputs, initForm, initLabels, upgradeInternals } from './utils.ts';
+import { ICustomElement } from './types.ts';
 
 export function observerCallback(mutationList: MutationRecord[]) {
   mutationList.forEach(mutationRecord => {

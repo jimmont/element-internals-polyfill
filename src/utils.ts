@@ -1,5 +1,5 @@
-import { hiddenInputMap, formsMap, formElementsMap, internalsMap, onSubmitMap } from './maps.js';
-import { ICustomElement, IElementInternals, LabelsList } from './types.js';
+import { hiddenInputMap, formsMap, formElementsMap, internalsMap, onSubmitMap } from './maps.ts';
+import { ICustomElement, IElementInternals, LabelsList } from './types.ts';
 
 const observerConfig: MutationObserverInit = { attributes: true, attributeFilter: ['disabled'] };
 

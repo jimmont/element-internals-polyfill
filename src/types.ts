@@ -1,5 +1,5 @@
-import { CustomStateSet } from "./CustomStateSet";
-import { ElementInternals } from "./element-internals";
+import { CustomStateSet } from "./CustomStateSet.ts";
+import { ElementInternals } from "./element-internals.ts";
 
 export interface IAom {
   ariaAtomic: string;

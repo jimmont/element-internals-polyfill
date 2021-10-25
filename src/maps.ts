@@ -3,7 +3,7 @@
  * objects together without polluting the objects themselves with references we'd rather keep
  * hidden. This allows the polyfill to work as transparently as possible.
  */
-import { IElementInternals, ICustomElement } from './types';
+import { IElementInternals, ICustomElement } from './types.ts';
 
 /** Use an ElementInternals instance to get a reference to the element it is attached to */
 export const refMap = new WeakMap<IElementInternals, ICustomElement>();

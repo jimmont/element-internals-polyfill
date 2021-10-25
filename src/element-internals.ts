@@ -7,7 +7,7 @@ import {
   validationAnchorMap,
   validityMap,
   validationMessageMap,
-} from './maps';
+} from './maps.ts';
 import {
   createHiddenInput,
   findParentForm,
@@ -16,12 +16,12 @@ import {
   removeHiddenInputs,
   throwIfNotFormAssociated,
   upgradeInternals
-} from './utils';
-import { initAom } from './aom';
-import { ValidityState, reconcileValidty, setValid } from './ValidityState';
-import { deferUpgrade, observerCallback, observerConfig } from './mutation-observers';
-import { IElementInternals, ICustomElement, LabelsList } from './types';
-import { CustomStateSet } from './CustomStateSet';
+} from './utils.ts';
+import { initAom } from './aom.ts';
+import { ValidityState, reconcileValidty, setValid } from './ValidityState.ts';
+import { deferUpgrade, observerCallback, observerConfig } from './mutation-observers.ts';
+import { IElementInternals, ICustomElement, LabelsList } from './types.ts';
+import { CustomStateSet } from './CustomStateSet.ts';
 
 export class ElementInternals implements IElementInternals {
   ariaAtomic: string;

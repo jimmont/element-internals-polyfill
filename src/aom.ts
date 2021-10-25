@@ -1,5 +1,5 @@
-import { upgradeMap } from './maps.js';
-import { IAom, IElementInternals } from './types';
+import { upgradeMap } from './maps.ts';
+import { IAom, IElementInternals } from './types.ts';
 
 export const aom: IAom = {
   ariaAtomic: 'aria-atomic',

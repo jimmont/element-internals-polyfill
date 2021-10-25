@@ -1,7 +1,8 @@
-import { ElementInternals } from './element-internals';
-import { CustomStateSet } from './CustomStateSet';
-import './element-internals';
-export * from './types';
+// @deno-types="./types.ts"
+import { ElementInternals } from './element-internals.ts';
+import { CustomStateSet } from './CustomStateSet.ts';
+import './element-internals.ts';
+export * from './types.ts';
 
 declare global {
   interface Window {
