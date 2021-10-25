@@ -23,6 +23,8 @@ import { deferUpgrade, observerCallback, observerConfig } from './mutation-obser
 import { IElementInternals, ICustomElement, LabelsList } from './types.ts';
 import { CustomStateSet } from './CustomStateSet.ts';
 
+// @note {@link https://developer.mozilla.org/docs/Web/API/HTMLFormElement/elements} NOTE specific tags
+const customElementTagList = new Set(['button', 'fieldset', 'input:not([type="image"])', 'object', 'output', 'select', 'textarea']);
 export class ElementInternals implements IElementInternals {
   ariaAtomic: string;
   ariaAutoComplete: string;
@@ -315,7 +317,7 @@ if (!isElementInternalsSupported()) {
       return () => {
         const { localName } = this;
         if(localName.includes('-')) {
-          this.customElementTagList.add( localName );
+          customElementTagList.add( localName );
         }else{
           throw new Error(`Failed to execute 'attachInternals' on 'HTMLElement': Unable to attach ElementInternals to non-custom elements.`);
         }
@@ -327,10 +329,7 @@ if (!isElementInternalsSupported()) {
   const elements = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'elements').get;
   Object.defineProperties(HTMLFormElement.prototype, {
     _elements: {get: elements},
-    // @note {@link https://developer.mozilla.org/docs/Web/API/HTMLFormElement/elements} NOTE specific tags
-    customElementTagList: {value: new Set(['button', 'fieldset', 'input:not([type="image"])', 'object', 'output', 'select', 'textarea'])},
     elements: {get: function(){
-      const { customElementTagList } = this;
       const nodes = this.querySelectorAll(Array.from(customElementTagList).join(', '));
 
       // @ref {@link https://developer.mozilla.org/docs/Web/API/HTMLFormControlsCollection} general behavior
