@@ -1,0 +1,296 @@
+<html><head>
+	<title>ElementInternals, report validity, etc with custom element</title>
+	<meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1, minimum-scale=0.3, maximum-scale=3.0 user-scalable=yes" >
+	<meta name="theme-color" content="#333">
+<!--
+derived initially from
+https://googlechrome.github.io/samples/report-validity/
+-> https://jimmont.github.io/samples/report-validity/
+
+
+-->
+<style>
+html{background-color:#cf0;}
+body{background-color:#fff;color:#000;font:1rem/1.5 system, system-ui, -apple-system, ".SFNSText-Regular", "San Francisco", "Oxygen", "Ubuntu", "Roboto", "Segoe UI", "Helvetica Neue", "Lucida Grande", sans-serif;padding:2rem;margin:1px;}
+
+a:link, a:visited{color:#000;text-decoration:underline;}
+a:is(:hover,:active,:focus){background-color:#cf0;}
+
+@media (prefers-color-scheme: dark) {
+html{background-color:#000;}
+body{background-color:#333;color:#fff;}
+a:link, a:visited{color:#fff;}
+a:is(:hover,:active,:focus){background-color:#111;}
+}
+</style>
+</head><body>
+<h3>Background</h3>
+<p>Example of <a href="https://html.spec.whatwg.org/multipage/forms.html#dom-cva-reportvalidity">reportValidity()</a> etc in forms.
+</p>
+
+<p>
+When a form is submitted, invalid events are fired at each form control that is invalid. The validity of submittable elements is checked before submitting their owner form, or after the checkValidity() method of the element or its owner form is called.
+ref https://developer.mozilla.org/docs/Web/API/HTMLInputElement/invalid_event
+</p>
+
+<p>
+refs
+https://html.spec.whatwg.org/multipage/custom-elements.html
+https://web.dev/more-capable-form-controls/
+</p>
+
+<style>
+[aria-invalid="false"],
+[internals-valid],
+:valid{ border: 1px dotted blue; }
+[aria-invalid="true"],
+[internals-invalid],
+:invalid{ border: 1px dotted red; }
+:required{ background: #cf0; }
+</style>
+<form id="sample-form">
+  <fieldset>
+    <label for="my-element">click to toggle my-element values</label>
+  <!-- NOTE my-element must be visible and focusable see comments in script below -->
+    <my-element required name="my-element"></my-element>
+    <label for="year">Enter at least four characters (required):</label>
+    <!-- 
+    	Norse were in Newfoundland North America in 1021 
+	https://wikipedia.org/wiki/Norse_colonization_of_North_America
+    -->
+    <input id="year" type="text" minlength="4" required name="sample-year" placeholder="year like '1021'">
+  </fieldset>
+  <button id="report-validity">Report Validity</button>
+  <button type=reset>reset</button>
+</form>
+
+<script type=module>
+const form = document.querySelector('form');
+const nodes = [form, form.querySelector('input')];
+function _handle(event){
+	const { type, detail, target } = event;
+	console.log({type, detail, target, path: event.composedPath(), self: this });
+	if(/^(?:invalid|submit|formdata)$/.test(type)){
+		console.warn(type, target);
+		requestAnimationFrame(()=>{
+			console.warn(type, target, {path:event.composedPath(), self:this, activeElement: document.activeElement});
+		});
+		if(/^(?:submit|formdata)$/.test(type)){
+			if(!this.checkValidity()){
+				event.preventDefault();
+				const list = Array.from(this.elements).filter(node=>!node.checkValidity());
+				console.log({invalid:list, elements: this.elements});
+			}
+		}
+	}
+}
+'change, input, invalid, submit,reset, formdata, error, validate'.split(/[,\s]+/).forEach(event=>{
+	if(!event.trim()) return;
+	nodes.forEach(node=>node.addEventListener(event, _handle));
+});
+/* a simple demo custom element that incorporates elementinternals to use validity APIs and reporting
+	when implemented as noted here it works in the same way standard HTML elements work
+
+
+2021-October applied to custom element
+see
+https://developer.mozilla.org/docs/Web/API/Constraint_validation
+https://developer.mozilla.org/docs/Web/API/ValidityState
+https://developer.mozilla.org/docs/Web/API/ElementInternals
+ */
+
+import './src/index.js';
+//import './elementinternals.js';
+class HTMLMyElement extends HTMLElement{
+	static get formAssociated() {
+		return true;
+	}
+	constructor(){
+		super();
+		this.internals = this.attachInternals();
+		this._initial;
+		this.attachShadow({
+			mode: 'open'
+			/* 	NOTE 
+			,delegatesFocus: true
+				does not work because shadowRoot elements are outside the form's tree
+			*/
+		}).innerHTML = `
+<style>
+:host{
+	cursor: pointer;
+	border: 1px dotted #aaa;
+	display: block;
+	padding: 0.2em 0.5em;
+	margin: 0.1rem 0;
+	font-size: 1rem;
+}
+:host([hidden]){
+	display:none;
+}
+:host([disabled]){
+	cursor: not-allowed;
+}
+:host(:invalid){
+	border-color: red;
+}
+:host(:where(:required)){
+	border-style: solid;
+	border-color: #000;
+}
+:host(:where(:optional)){
+	border-size: 0 0 1px 0;
+}
+:host(:where(:focus-within,:acive,:focus,:hover,[invalid])){
+	border-style: solid;
+}
+</style>
+<slot>empty + invalid</slot>
+		`;
+		this.addEventListener('click', this._click);
+		this.addEventListener('invalid', this._capture);
+
+		if(!this.hasAttribute('tabindex')){
+		/* NOTE 
+		to use the request validation the element must:
+		* be visible
+		* not use delegatesFocus because shadowRoots do not work currently (2021-10)
+		* have a tabIndex value
+
+		otherwise the error (for native and custom elements both) appears (when invalid):
+		An invalid form control with name='my-element' is not focusable.
+
+		to reproduce the error simply remove/comment the tabindex or hide the element
+			*/
+			this.setAttribute('tabindex', 0);
+		}
+
+	}
+	_capture(event){
+		const { type } = event;
+		console.warn('_capture '+type, {type, event, path: event.composedPath()});
+	}
+	/*
+		provide a convenient way to toggle values through possibilities
+	 */
+	_click(event){
+		const { value } = this;
+		const { altKey, metaKey, ctrlKey, shiftKey } = event;
+		if(altKey && shiftKey && metaKey){
+			this.setAttribute('hidden', '');
+		}else if(altKey && shiftKey){
+			this.disabled = true;
+		}else if(shiftKey || altKey){
+			this.required = !this.required;
+		}else{
+			this.value = value ? '' : (new Date).toISOString();
+		}
+	}
+
+	get form(){
+		return this.internals.form;
+	}
+	get labels(){
+		return this.internals.labels;
+	}
+	get states(){
+		return this.internals.states;
+	}
+
+	get validity(){
+		const { validity } = this.internals;
+console.log('validity', validity);
+		return validity;
+	}
+	get willValidate(){
+console.log('willValidate');
+		return this.internals.willValidate;
+	}
+	get validationMessage(){
+		return this.internals.validationMessage;
+	}
+	setValidity(){
+		const { value } = this;
+		if(!this.disabled && this.required && value.trim().length < 1){
+			this.internals.setValidity({valueMissing: true}, 'My-element requires a value.');
+		}else{
+			this.internals.setValidity({});
+		}
+console.log('setValidity', this.validity);
+		this.setFormValue('setFormValue-'+value);
+	}
+	setFormValue(value){
+console.log('setFormValue',value);
+		this.internals.setFormValue(value);
+	}
+	checkValidity() {
+console.log('checkValidity');
+		return this.internals.checkValidity();
+	}
+	reportValidity() {
+console.log('reportValidity');
+		return this.internals.reportValidity();
+	}
+	formStateRestoreCallback(state, mode){
+		console.warn('formStateRestoreCallback', state, mode);
+		debugger;
+	}
+	formAssociatedCallback(form){
+		this._initial = this.value;
+console.log('formAssociatedCallback');
+		this.setValidity();
+	}
+	formResetCallback(){
+		this.value = this._initial;
+console.log('formResetCallback');
+		this.setValidity();
+	}
+	formDisabledCallback(disabled){
+// when the disabled attribute changes or a fieldset's does this is called
+		console.log(`formDisabledCallback element${ disabled ? '[disabled]' : ':not([disabled])'}`);
+	}
+
+	__attributeBoolean(name, value){
+		if(value){
+			return this.setAttribute(name, '');
+		}else{
+			return this.removeAttribute(name);
+		}
+	}
+	get required(){
+		return this.hasAttribute('required');
+	}
+	set required(state){
+		return this.__attributeBoolean('required', state);
+	}
+	get disabled(){
+		return this.hasAttribute('disabled');
+	}
+	set disabled(state){
+		return this.__attributeBoolean('disabled', state);
+	}
+	get value(){
+		return this.innerText;
+	}
+	set value(text){
+		this.textContent = text ?? '';
+		this.setValidity();
+		// fires as thing changes
+		this.dispatchEvent(new CustomEvent('input', {
+			bubbles: true,
+			cancelable: false,
+			composed: true,
+		}));
+		// fires at end of changes (when focus moves out)
+		this.dispatchEvent(new CustomEvent('change', {
+			bubbles: true,
+			cancelable: false,
+			// not composed
+			composed: false,
+		}));
+	}
+}
+
+customElements.define('my-element', HTMLMyElement)
+</script>
+
